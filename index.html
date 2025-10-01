@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restricted Access System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // SVG Icons as components
+        const Lock = () => (
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        );
+
+        const Key = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+            </svg>
+        );
+
+        const Settings = ({ size = 32 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6m0-18a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        );
+
+        const ArrowLeft = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+        );
+
+        const Plus = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+        );
+
+        const Edit2 = ({ size = 16 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+        );
+
+        const Trash2 = ({ size = 16 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+        );
+
+        const Save = ({ size = 16 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+            </svg>
+        );
+
+        const X = ({ size = 16 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
+
+        const Download = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        );
+
+        const Upload = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        );
+
+        function SecretCodeWebsite() {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [codeInput, setCodeInput] = useState('');
+            const [error, setError] = useState('');
+            const [viewingContent, setViewingContent] = useState(null);
+
+            const loadFromStorage = () => {
+                try {
+                    const saved = localStorage.getItem('secretCodeData');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        return {
+                            adminCode: data.adminCode || 'ADMIN2025',
+                            codes: data.codes || {}
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error loading from storage:', e);
+                }
+                return {
+                    adminCode: '(ACSADMIN)',
+                    codes: {
+                        'SECRET123': {
+                            title: 'Welcome Message',
+                            content: 'Congratulations! You\'ve unlocked this secret content. This is a demo of what you can display when someone enters a valid code.'
+                        },
+                        'DEMO456': {
+                            title: 'Special Announcement',
+                            content: 'This is another secret page. You can create unlimited pages, each with its own unique code!'
+                        }
+                    }
+                };
+            };
+
+            const initialData = loadFromStorage();
+            const [adminCode, setAdminCode] = useState(initialData.adminCode);
+            const [codes, setCodes] = useState(initialData.codes);
+
+            useEffect(() => {
+                try {
+                    const dataToSave = {
+                        adminCode: adminCode,
+                        codes: codes,
+                        lastSaved: new Date().toISOString()
+                    };
+                    localStorage.setItem('secretCodeData', JSON.stringify(dataToSave));
+                } catch (e) {
+                    console.error('Error saving to storage:', e);
+                }
+            }, [adminCode, codes]);
+
+            const [editingCode, setEditingCode] = useState(null);
+            const [newCodeKey, setNewCodeKey] = useState('');
+            const [newCodeTitle, setNewCodeTitle] = useState('');
+            const [newCodeContent, setNewCodeContent] = useState('');
+            const [editAdminMode, setEditAdminMode] = useState(false);
+            const [newAdminCode, setNewAdminCode] = useState('');
+
+            const handleExportData = () => {
+                const data = {
+                    adminCode: adminCode,
+                    codes: codes,
+                    exportDate: new Date().toISOString()
+                };
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `access-codes-backup-${Date.now()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            };
+
+            const handleImportData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.adminCode && data.codes) {
+                            setAdminCode(data.adminCode);
+                            setCodes(data.codes);
+                            alert('Data imported successfully!');
+                        } else {
+                            alert('Invalid backup file format');
+                        }
+                    } catch (error) {
+                        alert('Error reading file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            const handleCodeSubmit = () => {
+                const upperCode = codeInput.toUpperCase();
+                
+                if (upperCode === adminCode) {
+                    setCurrentPage('admin');
+                    setCodeInput('');
+                    setError('');
+                } else if (codes[upperCode]) {
+                    setViewingContent({ code: upperCode, ...codes[upperCode] });
+                    setCurrentPage('content');
+                    setCodeInput('');
+                    setError('');
+                } else {
+                    setError('Invalid code. Please try again.');
+                    setTimeout(() => setError(''), 3000);
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleCodeSubmit();
+                }
+            };
+
+            const handleCreateCode = () => {
+                if (!newCodeKey || !newCodeTitle || !newCodeContent) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+                
+                const upperKey = newCodeKey.toUpperCase();
+                if (codes[upperKey] || upperKey === adminCode) {
+                    alert('This code already exists!');
+                    return;
+                }
+
+                setCodes({
+                    ...codes,
+                    [upperKey]: {
+                        title: newCodeTitle,
+                        content: newCodeContent
+                    }
+                });
+
+                setNewCodeKey('');
+                setNewCodeTitle('');
+                setNewCodeContent('');
+            };
+
+            const handleDeleteCode = (codeKey) => {
+                if (window.confirm(`Are you sure you want to delete code "${codeKey}"?`)) {
+                    const newCodes = { ...codes };
+                    delete newCodes[codeKey];
+                    setCodes(newCodes);
+                }
+            };
+
+            const handleEditCode = (codeKey) => {
+                setEditingCode({
+                    key: codeKey,
+                    originalKey: codeKey,
+                    title: codes[codeKey].title,
+                    content: codes[codeKey].content
+                });
+            };
+
+            const handleSaveEdit = () => {
+                const newKey = editingCode.key.toUpperCase();
+                const originalKey = editingCode.originalKey;
+                
+                if (newKey !== originalKey && (codes[newKey] || newKey === adminCode)) {
+                    alert('This code already exists! Please choose a different code name.');
+                    return;
+                }
+                
+                const newCodes = { ...codes };
+                
+                if (newKey !== originalKey) {
+                    delete newCodes[originalKey];
+                }
+                
+                newCodes[newKey] = {
+                    title: editingCode.title,
+                    content: editingCode.content
+                };
+                
+                setCodes(newCodes);
+                setEditingCode(null);
+            };
+
+            const handleUpdateAdminCode = () => {
+                if (!newAdminCode) {
+                    alert('Please enter a new admin code');
+                    return;
+                }
+                setAdminCode(newAdminCode.toUpperCase());
+                setNewAdminCode('');
+                setEditAdminMode(false);
+                alert('Admin code updated successfully!');
+            };
+
+            if (currentPage === 'home') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-black via-red-950 to-black flex items-center justify-center p-4">
+                        <div className="w-full max-w-md">
+                            <div className="text-center mb-8">
+                                <div className="text-red-600 mx-auto mb-4 animate-pulse flex justify-center">
+                                    <Lock />
+                                </div>
+                                <h1 className="text-5xl font-bold text-red-600 mb-2 tracking-wider">ACS</h1>
+                                <p className="text-red-400 text-lg tracking-widest">ACCESS CONTROL SYSTEM</p>
+                            </div>
+
+                            <div className="bg-black border-2 border-red-600 rounded-lg p-8 shadow-2xl" style={{boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.5)'}}>
+                                <label className="block text-red-500 font-semibold mb-3 uppercase tracking-wide text-sm">
+                                    Enter Access Code
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-600">
+                                        <Key />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={codeInput}
+                                        onChange={(e) => setCodeInput(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        className="w-full bg-red-950 border-2 border-red-600 text-red-100 rounded-lg px-10 py-3 focus:outline-none focus:border-red-500 uppercase tracking-widest font-mono text-center"
+                                        placeholder="XXXXXX"
+                                        autoFocus
+                                    />
+                                </div>
+                                
+                                {error && (
+                                    <div className="mt-4 bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded-lg text-center text-sm">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleCodeSubmit}
+                                    className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 uppercase tracking-wide shadow-lg"
+                                    style={{boxShadow: '0 10px 15px -3px rgba(220, 38, 38, 0.5)'}}
+                                >
+                                    Verify Access
+                                </button>
+
+                                <div className="mt-6 pt-6 border-t border-red-900">
+                                    <p className="text-red-500 text-xs text-center tracking-wider">
+                                        Private ACS
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPage === 'content' && viewingContent) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-black via-red-950 to-black p-4">
+                        <div className="max-w-4xl mx-auto py-8">
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('home');
+                                    setViewingContent(null);
+                                }}
+                                className="mb-6 flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                            >
+                                <ArrowLeft />
+                                <span className="font-semibold">Back to Home</span>
+                            </button>
+
+                            <div className="bg-black border-2 border-red-600 rounded-lg p-8 shadow-2xl" style={{boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.5)'}}>
+                                <div className="mb-4 inline-block px-4 py-1 bg-red-600 text-white text-sm font-mono rounded">
+                                    CODE: {viewingContent.code}
+                                </div>
+                                <h1 className="text-4xl font-bold text-red-600 mb-6">{viewingContent.title}</h1>
+                                <div className="text-red-100 text-lg whitespace-pre-wrap leading-relaxed">
+                                    {viewingContent.content}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPage === 'admin') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-black via-red-950 to-black p-4">
+                        <div className="max-w-6xl mx-auto py-8">
+                            <button
+                                onClick={() => setCurrentPage('home')}
+                                className="mb-6 flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                            >
+                                <ArrowLeft />
+                                <span className="font-semibold">Back to Home</span>
+                            </button>
+
+                            <div className="bg-black border-2 border-red-600 rounded-lg p-8 shadow-2xl mb-6" style={{boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.5)'}}>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="text-red-600">
+                                        <Settings />
+                                    </div>
+                                    <h1 className="text-3xl font-bold text-red-600 tracking-wide">ADMIN CONTROL PANEL</h1>
+                                </div>
+
+                                <div className="bg-red-950 border border-red-600 rounded-lg p-4 mb-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-red-400 font-semibold mb-1">Admin Access Code</h3>
+                                            <p className="text-red-300 font-mono text-lg">{adminCode}</p>
+                                        </div>
+                                        {!editAdminMode ? (
+                                            <button
+                                                onClick={() => setEditAdminMode(true)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <Edit2 />
+                                                Change
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-2 flex-wrap">
+                                                <input
+                                                    type="text"
+                                                    value={newAdminCode}
+                                                    onChange={(e) => setNewAdminCode(e.target.value)}
+                                                    placeholder="New admin code"
+                                                    className="bg-black border border-red-600 text-red-100 px-3 py-2 rounded-lg uppercase font-mono"
+                                                />
+                                                <button
+                                                    onClick={handleUpdateAdminCode}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                                >
+                                                    <Save />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditAdminMode(false);
+                                                        setNewAdminCode('');
+                                                    }}
+                                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                                >
+                                                    <X />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-red-950 border border-red-600 rounded-lg p-6 mb-6">
+                                    <h2 className="text-xl font-bold text-red-400 mb-4">Backup & Restore</h2>
+                                    <p className="text-red-300 text-sm mb-4">Export your codes to transfer them to another device or create a backup</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            onClick={handleExportData}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors font-semibold"
+                                        >
+                                            <Download />
+                                            Export All Data
+                                        </button>
+                                        <label className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors font-semibold cursor-pointer">
+                                            <Upload />
+                                            Import Data
+                                            <input
+                                                type="file"
+                                                accept=".json"
+                                                onChange={handleImportData}
+                                                style={{display: 'none'}}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="bg-red-950 border border-red-600 rounded-lg p-6 mb-6">
+                                    <h2 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                                        <Plus />
+                                        Create New Access Code
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-red-400 mb-2 font-semibold">Code Key</label>
+                                            <input
+                                                type="text"
+                                                value={newCodeKey}
+                                                onChange={(e) => setNewCodeKey(e.target.value)}
+                                                placeholder="e.g., SECRET789"
+                                                className="w-full bg-black border border-red-600 text-red-100 px-4 py-2 rounded-lg uppercase font-mono focus:outline-none focus:border-red-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-red-400 mb-2 font-semibold">Page Title</label>
+                                            <input
+                                                type="text"
+                                                value={newCodeTitle}
+                                                onChange={(e) => setNewCodeTitle(e.target.value)}
+                                                placeholder="e.g., Secret Information"
+                                                className="w-full bg-black border border-red-600 text-red-100 px-4 py-2 rounded-lg focus:outline-none focus:border-red-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-red-400 mb-2 font-semibold">Content</label>
+                                            <textarea
+                                                value={newCodeContent}
+                                                onChange={(e) => setNewCodeContent(e.target.value)}
+                                                placeholder="Enter the content to display..."
+                                                rows="6"
+                                                className="w-full bg-black border border-red-600 text-red-100 px-4 py-2 rounded-lg resize-none focus:outline-none focus:border-red-500"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleCreateCode}
+                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all"
+                                        >
+                                            Create Code
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-red-950 border border-red-600 rounded-lg p-6">
+                                    <h2 className="text-xl font-bold text-red-400 mb-4">Manage Existing Codes ({Object.keys(codes).length})</h2>
+                                    <div className="space-y-3">
+                                        {Object.keys(codes).length === 0 ? (
+                                            <p className="text-red-300 text-center py-4">No codes created yet</p>
+                                        ) : (
+                                            Object.entries(codes).map(([codeKey, codeData]) => (
+                                                <div key={codeKey} className="bg-black border border-red-600 rounded-lg p-4">
+                                                    {editingCode && editingCode.originalKey === codeKey ? (
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <label className="block text-red-400 mb-2 font-semibold text-sm">Code Key</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCode.key}
+                                                                    onChange={(e) => setEditingCode({ ...editingCode, key: e.target.value })}
+                                                                    className="w-full bg-red-950 border border-red-600 text-red-100 px-3 py-2 rounded-lg uppercase font-mono"
+                                                                    placeholder="CODE KEY"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-red-400 mb-2 font-semibold text-sm">Title</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCode.title}
+                                                                    onChange={(e) => setEditingCode({ ...editingCode, title: e.target.value })}
+                                                                    className="w-full bg-red-950 border border-red-600 text-red-100 px-3 py-2 rounded-lg"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-red-400 mb-2 font-semibold text-sm">Content</label>
+                                                                <textarea
+                                                                    value={editingCode.content}
+                                                                    onChange={(e) => setEditingCode({ ...editingCode, content: e.target.value })}
+                                                                    rows="4"
+                                                                    className="w-full bg-red-950 border border-red-600 text-red-100 px-3 py-2 rounded-lg resize-none"
+                                                                />
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={handleSaveEdit}
+                                                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                                                                >
+                                                                    <Save />
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingCode(null)}
+                                                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="text-red-400 font-mono font-bold mb-1">{codeKey}</div>
+                                                                <div className="text-red-300 font-semibold">{codeData.title}</div>
+                                                                <div className="text-red-200 text-sm mt-1 line-clamp-2">{codeData.content}</div>
+                                                            </div>
+                                                            <div className="flex gap-2 ml-4">
+                                                                <button
+                                                                    onClick={() => handleEditCode(codeKey)}
+                                                                    className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"
+                                                                    title="Edit"
+                                                                >
+                                                                    <Edit2 />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteCode(codeKey)}
+                                                                    className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(<SecretCodeWebsite />);
+    </script>
+</body>
+</html>
